@@ -1,4 +1,7 @@
 const path = require('path')
+const MiniCssExtractPlugin = require("mini-css-extract-plugin")
+
+
 module.exports = {
     entry: {
         main: __dirname + '/src/main.js'       //入口
@@ -24,7 +27,35 @@ module.exports = {
                 },
                 exclude: path.resolve(__dirname, 'node_modules'),
                 include: path.resolve(__dirname, 'src'),
+            },
+            {
+                test: /\.css$/,
+                use: [{
+                    loader: MiniCssExtractPlugin.loader,
+                    options: {
+                        publicPath: "../"
+                    }
+                },  'css-loader']
+            },
+            {
+                test: /\.scss$/,
+                use: [{
+                    loader: MiniCssExtractPlugin.loader,
+                    options: {
+                        publicPath: "../"
+                    }
+                }, 'css-loader', 'sass-loader'],
+            },
+            { 
+                test: /\.(png|jpeg|jpg|ttf|gif)/,
+                loader: 'file-loader' 
             }
         ]
-    }
+    },
+    plugins: [
+        new MiniCssExtractPlugin({
+            filename: "[name].[chunkhash:8].css",
+            chunkFilename: "[id].css"
+        })
+    ],
 }
