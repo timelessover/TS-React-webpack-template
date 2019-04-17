@@ -1,2 +1,2 @@
-import "../css/chunk.scss"
-alert('1')
+import "../css/base.scss"
+import "amfe-flexible/index.js"
