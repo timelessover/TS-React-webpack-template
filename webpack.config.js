@@ -1,35 +1,33 @@
 const path = require('path')
-const MiniCssExtractPlugin = require("mini-css-extract-plugin")
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const webpack = require('webpack')
+const MiniCssExtractPlugin = require("mini-css-extract-plugin")
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 
-//HTML模板封装
-let createHtml = function (name) {
-    return new HtmlWebpackPlugin({
-        template: __dirname + `/src/view/${name}.html`,
-        filename: `${name}.html`,
-        chunks: [`${name}`],
-        chunksSortMode: 'manual'
-    })
-}
-
-
 module.exports = {
-    mode: "development", //打包为开发模式
+    // 开发模式,上线用生产模式
+    mode: "development", 
     entry: {
-        main: __dirname + '/src/js/main.js', //入口要打包的文件
-        index: __dirname + '/src/js/index.js'
-
+    // 以前是jsx，因为我们用typescript写，所以这里后缀是tsx
+        index: "./src/index.tsx",
     },
     output: {
-        filename: 'js/[name].[hash:7].js', //输出的文件           
+        filename: 'js/index.js', //输出的文件           
         path: path.resolve(__dirname, 'dist') //输出文件所在的目录
     },
     devServer: { // 检测代码变化并自动重新编译并自动刷新浏览器
+        // 启动热更新,当模块、组件有变化，不会刷新整个页面，而是局部刷新
+        // 需要和插件webpack.HotModuleReplacementPlugin配合使用
+        hot: true,
         contentBase: path.resolve(__dirname, 'dist') // 设置静态资源的根目录
     },
-    //加速打包
+     // 为了方便调试，还要配置一下调试工具
+    devtool: "source-map",
+    resolve: {
+        // 一般写模块不会写后缀，在这里配置好相应的后缀，那么当我们不写后缀时，会按照这个后缀优先查找
+        extensions: [".ts", '.tsx', '.js', '.json']
+    },
+    // 加速打包
     optimization: {
         minimizer: [
             new UglifyJsPlugin({
@@ -50,26 +48,20 @@ module.exports = {
     module: { // 如何处理项目中不同类型的模块
         rules: [ // 用于规定在不同模块被创建时如何处理模块的规则数组
             {
-                test: /(\.js)$/,
-                use: {
-                    loader: "babel-loader",
-                    options: {
-                        presets: [
-                            "env"
-                        ]
-                    }
-                },
-                exclude: path.resolve(__dirname, 'node_modules'),
-                include: path.resolve(__dirname, 'src'),
+                // 如果这个模块是.ts或者.tsx，则会使用ts-loader把代码转成es5
+                test: /\.tsx?$/,
+                loader: "ts-loader"
+            },
+            {
+                // 使用sourcemap调试
+                // enforce:pre表示这个loader要在别的loader执行前执行
+                enforce: "pre",
+                test: /\.js$/,
+                loader: "source-map-loader"
             },
             {
                 test: /\.(css|scss)$/,
-                use: [{
-                    loader: MiniCssExtractPlugin.loader,
-                    options: {
-                        publicPath: "../"
-                    }
-                }, 'css-loader', {
+                use: [MiniCssExtractPlugin.loader,'css-loader', {
                     loader: 'postcss-loader',
                     options: {
                         ident: 'postcss',
@@ -100,46 +92,23 @@ module.exports = {
                         context: 'src',
                         name: '[path][name].[hash:7].[ext]'
                     }
-
                 }]
             },
-            {
-                test: /\.(htm|html)$/i,
-                use: ['html-withimg-loader']
-            },
-            //暴露$和jQuery到全局
-            {
-                test: require.resolve('jquery'), //require.resolve 用来获取模块的绝对路径
-                use: [{
-                    loader: 'expose-loader',
-                    options: 'jQuery'
-                }, {
-                    loader: 'expose-loader',
-                    options: '$'
-                }]
-            },
-
         ]
     },
 
     plugins: [
-        //CSS分离
+        // 这个插件是生成index.html
+        new HtmlWebpackPlugin({
+            // 以哪个文件为模板，模板路径
+            template: "./index.html",
+            // 编译后的文件名
+            filename: "index.html"
+        }),
         new MiniCssExtractPlugin({
             filename: "css/[name].[hash:7].css",
             chunkFilename: "css/[id].[hash:7].css",
         }),
-
-        // HTML页面
-        createHtml("index"),
-        createHtml("main"),
-
-        //全局查件
-        new webpack.ProvidePlugin({
-            $: "jquery",
-            jQuery: "jquery",
-            'window.$': 'jquery',
-            'window.jQuery': 'jquery',
-            Popper: ['popper.js', 'default'],
-        })
-    ],
+        new webpack.HotModuleReplacementPlugin()
+    ]
 }
