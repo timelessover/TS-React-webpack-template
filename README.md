@@ -3,16 +3,16 @@
 
 ## 体验
 
-> 下载项目：
->
+下载项目：
+
 > git clone git@github.com:timelessover/TS-React-webpack-template.git
->
-> 安装依赖：
->
+
+ 安装依赖：
+
 > yarn add
->
-> 启动项目：
->
+
+ 启动项目：
+
 > yarn start
 
 ## 配置说明
